@@ -1,20 +1,22 @@
 syntax = "proto3";
-package iochti.thingGroup;
+package proto;
 
 import "google/protobuf/empty.proto";
-import "thing-service/proto/thing.proto";
+import "google/protobuf/timestamp.proto";
 
 service ThingGroupSvc {
   rpc GetGroup(GroupIDRequest) returns (ThingGroup) {}
+  rpc UpdateGroup(ThingGroup) returns (ThingGroup) {}
   rpc CreateGroup(ThingGroup) returns (ThingGroup) {}
   rpc DeleteGroup(GroupIDRequest) returns (google.protobuf.Empty) {}
-  rpc GetGroupsThings(GroupIDRequest) returns (stream iochti.thing.Thing) {}
 }
 
 message ThingGroup {
   int32 ID = 1;
   string Name = 2;
   string Description = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
 }
 
 message GroupIDRequest {
