@@ -1,0 +1,22 @@
+syntax = "proto3";
+package iochti.thingGroup;
+
+import "google/protobuf/empty.proto";
+import "thing-service/proto/thing.proto";
+
+service ThingGroupSvc {
+  rpc GetGroup(GroupIDRequest) returns (ThingGroup) {}
+  rpc CreateGroup(ThingGroup) returns (ThingGroup) {}
+  rpc DeleteGroup(GroupIDRequest) returns (google.protobuf.Empty) {}
+  rpc GetGroupsThings(GroupIDRequest) returns (stream iochti.thing.Thing) {}
+}
+
+message ThingGroup {
+  int32 ID = 1;
+  string Name = 2;
+  string Description = 3;
+}
+
+message GroupIDRequest {
+  int32 ID = 1;
+}
