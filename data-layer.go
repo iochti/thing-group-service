@@ -12,7 +12,7 @@ import (
 
 // DataLayerInterface is an interface abstracting methods to CRUD ThingGroup
 type DataLayerInterface interface {
-	GetGroupById(groupID int32, group *pb.ThingGroup) error
+	GetGroupByID(groupID int32, group *pb.ThingGroup) error
 	CreateGroup(group *pb.ThingGroup) error
 	UpdateGroup(group *pb.ThingGroup) error
 	DeleteGroup(groupID int32) error
@@ -45,7 +45,7 @@ func (p *PostgresDL) Init() error {
 }
 
 // GetGroupById gets a group by its ID
-func (p *PostgresDL) GetGroupById(groupID int32, group *pb.ThingGroup) error {
+func (p *PostgresDL) GetGroupByID(groupID int32, group *pb.ThingGroup) error {
 	var timeCreated time.Time
 	var timeUpdated time.Time
 	err := p.Db.QueryRow(

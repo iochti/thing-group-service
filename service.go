@@ -19,7 +19,7 @@ func (t *ThingGroupSvc) GetGroup(ctx context.Context, in *pb.GroupIDRequest) (*p
 		return nil, grpc.Errorf(codes.InvalidArgument, "Error: bad ID")
 	}
 	group := new(pb.ThingGroup)
-	if err := t.Db.GetGroupById(in.GetID(), group); err != nil {
+	if err := t.Db.GetGroupByID(in.GetID(), group); err != nil {
 		return nil, grpc.Errorf(codes.NotFound, err.Error())
 	}
 	return group, nil
