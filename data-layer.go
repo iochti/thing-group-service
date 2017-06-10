@@ -52,10 +52,10 @@ func (p *PostgresDL) GetGroupByID(groupID int32, group *pb.ThingGroup) error {
 	var timeCreated time.Time
 	var timeUpdated time.Time
 	err := p.Db.QueryRow(
-		"SELECT id, group_id, name, description, created_at, updated_at FROM "+THING_GROUP_TABLE+" WHERE id=$1;",
+		"SELECT id, account_id, name, description, created_at, updated_at FROM "+THING_GROUP_TABLE+" WHERE id=$1;",
 		groupID).Scan(
 		&group.ID,
-		&group.Group_ID,
+		&group.AccountId,
 		&group.Name,
 		&group.Description,
 		&timeCreated,
@@ -73,9 +73,9 @@ func (p *PostgresDL) GetGroupByID(groupID int32, group *pb.ThingGroup) error {
 func (p *PostgresDL) CreateGroup(group *pb.ThingGroup) error {
 	timeNow := time.Now()
 	var groupID int32
-	err := p.Db.QueryRow("INSERT INTO "+THING_GROUP_TABLE+`(name, group_id, description, created_at, updated_at)
+	err := p.Db.QueryRow("INSERT INTO "+THING_GROUP_TABLE+`(name, account_id, description, created_at, updated_at)
         VALUES($1, $2, $3, $4, $4) RETURNING id;
-    `, group.GetName(), group.GetGroup_ID(), group.GetDescription(), timeNow).Scan(&groupID)
+    `, group.GetName(), group.GetAccountId(), group.GetDescription(), timeNow).Scan(&groupID)
 	if err != nil {
 		return err
 	}
@@ -90,11 +90,11 @@ func (p *PostgresDL) UpdateGroup(group *pb.ThingGroup) error {
 	var createdTime time.Time
 	err := p.Db.QueryRow("UPDATE "+THING_GROUP_TABLE+` SET
         name=$1,
-		group_id=$2
+		account_id=$2
         description=$3,
         updated_at=$4
         WHERE id=$5 RETURNING created_at;
-    `, group.GetName(), group.GetGroup_ID(), group.GetDescription(), updateTime, group.GetID()).Scan(&createdTime)
+    `, group.GetName(), group.GetAccountId(), group.GetDescription(), updateTime, group.GetID()).Scan(&createdTime)
 	if err != nil {
 		return err
 	}
