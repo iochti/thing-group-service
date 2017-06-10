@@ -1,10 +1,11 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net"
 	"os"
+
+	"github.com/namsral/flag"
 
 	pb "github.com/iochti/thing-group-service/proto"
 	"google.golang.org/grpc"

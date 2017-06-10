@@ -27,11 +27,10 @@ func (t *ThingGroupSvc) GetGroup(ctx context.Context, in *pb.GroupIDRequest) (*p
 
 // CreateGroup creates a group in the database in returns it
 func (t *ThingGroupSvc) CreateGroup(ctx context.Context, in *pb.ThingGroup) (*pb.ThingGroup, error) {
-	created := new(pb.ThingGroup)
-	if err := t.Db.CreateGroup(created); err != nil {
+	if err := t.Db.CreateGroup(in); err != nil {
 		return nil, grpc.Errorf(codes.Internal, err.Error())
 	}
-	return created, nil
+	return in, nil
 }
 
 // UpdateGroup updates a group with group passed as parameter

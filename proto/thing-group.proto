@@ -13,8 +13,8 @@ service ThingGroupSvc {
 
 message ThingGroup {
   int32 ID = 1;
-  string Name = 2;
-  string Description = 3;
+  string name = 2;
+  string description = 3;
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp updated_at = 5;
 }

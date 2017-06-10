@@ -2,9 +2,12 @@ package main
 
 import (
 	"database/sql"
-	"flag"
 	"fmt"
 	"time"
+
+	"github.com/namsral/flag"
+
+	_ "github.com/lib/pq"
 
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	pb "github.com/iochti/thing-group-service/proto"
@@ -44,7 +47,7 @@ func (p *PostgresDL) Init() error {
 	return nil
 }
 
-// GetGroupById gets a group by its ID
+// GetGroupByID gets a group by its ID
 func (p *PostgresDL) GetGroupByID(groupID int32, group *pb.ThingGroup) error {
 	var timeCreated time.Time
 	var timeUpdated time.Time
@@ -71,11 +74,12 @@ func (p *PostgresDL) CreateGroup(group *pb.ThingGroup) error {
 	var groupID int32
 	err := p.Db.QueryRow("INSERT INTO "+THING_GROUP_TABLE+`(name, description, created_at, updated_at)
         VALUES($1, $2, $3, $3) RETURNING id;
-    `, group.GetName(), group.GetDescription(), timeNow, timeNow).Scan(&groupID)
+    `, group.GetName(), group.GetDescription(), timeNow).Scan(&groupID)
 	if err != nil {
 		return err
 	}
 	setTime(group, timeNow, timeNow)
+	group.ID = groupID
 	return nil
 }
 
