@@ -13,10 +13,10 @@ import (
 )
 
 // Db is a PostgresDL instance used by the service
-var Db *PostgresDL
+var Db *MgoDL
 
 func init() {
-	Db = new(PostgresDL)
+	Db = new(MgoDL)
 	Db.Init()
 }
 

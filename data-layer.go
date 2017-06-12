@@ -1,116 +1,94 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	"time"
+
+	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 
 	"github.com/namsral/flag"
 
 	_ "github.com/lib/pq"
 
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
-	pb "github.com/iochti/thing-group-service/proto"
+	"github.com/iochti/thing-group-service/models"
 )
 
 // DataLayerInterface is an interface abstracting methods to CRUD ThingGroup
 type DataLayerInterface interface {
-	GetGroupByID(groupID int32, group *pb.ThingGroup) error
-	CreateGroup(group *pb.ThingGroup) error
-	UpdateGroup(group *pb.ThingGroup) error
-	DeleteGroup(groupID int32) error
+	GetGroupByID(groupID string, group *models.ThingGroup) error
+	CreateGroup(group *models.ThingGroup) error
+	UpdateGroup(group *models.ThingGroup) error
+	DeleteGroup(groupID string) error
 }
 
-// PostgresDL implements the DataLayerInterface for PostgresSQL mappings
-type PostgresDL struct {
-	DBName string
-	Host   string
-	Db     *sql.DB
+const THING_GROUP_COLLECTION = "thing_group"
+
+// MgoDL implements DataLayerInterface
+type MgoDL struct {
+	DBName  string
+	Session *mgo.Session
 }
 
-const THING_GROUP_TABLE = "thing_group"
+var (
+	mainSession *mgo.Session
+	mainDB      *mgo.Database
+	DBName      string
+)
 
-// Init the DB host,user,etc...
-func (p *PostgresDL) Init() error {
-	host := flag.String("pq-host", "localhost", "PostgresSQL database host")
-	user := flag.String("pq-user", "postgres", "PostgresSQL user")
-	dbName := flag.String("pq-db", "iochti", "PostgresSQL DBName")
-	password := flag.String("pq-pwd", "", "PostgresSQL user password")
+// Init inits the DB
+func (m *MgoDL) Init() error {
+	mHost := flag.String("mhost", "localhost", "MongoDB database host")
+	mPort := flag.String("mport", "27017", "MongoDB's port")
+	mName := flag.String("mname", "crm", "MongoDB's name")
 	flag.Parse()
-
-	// Create a db connection
-	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", *user, *password, *host, *dbName))
+	mainSession, err := mgo.Dial(fmt.Sprintf("mongodb://%s:%s", *mHost, *mPort))
 	if err != nil {
-		return err
+		panic(err)
 	}
-	p.Db = db
+	mainDB = mainSession.DB(*mName)
+
+	m.Session = mainSession.Copy()
+
+	s := m.Session.Copy()
+	defer s.Close()
 	return nil
 }
 
 // GetGroupByID gets a group by its ID
-func (p *PostgresDL) GetGroupByID(groupID int32, group *pb.ThingGroup) error {
-	var timeCreated time.Time
-	var timeUpdated time.Time
-	err := p.Db.QueryRow(
-		"SELECT id, account_id, name, description, created_at, updated_at FROM "+THING_GROUP_TABLE+" WHERE id=$1;",
-		groupID).Scan(
-		&group.ID,
-		&group.AccountId,
-		&group.Name,
-		&group.Description,
-		&timeCreated,
-		&timeUpdated,
-	)
-	if err != nil {
+func (m *MgoDL) GetGroupByID(groupID string, group *models.ThingGroup) error {
+	sess := m.Session.Copy()
+	if err := sess.DB(DBName).C(THING_GROUP_COLLECTION).FindId(bson.ObjectIdHex(groupID)).One(&group); err != nil {
 		return err
 	}
-	group.CreatedAt = &timestamp.Timestamp{Seconds: timeCreated.Unix()}
-	group.UpdatedAt = &timestamp.Timestamp{Seconds: timeUpdated.Unix()}
 	return nil
 }
 
 // CreateGroup creates a group and updates its ID
-func (p *PostgresDL) CreateGroup(group *pb.ThingGroup) error {
-	timeNow := time.Now()
-	var groupID int32
-	err := p.Db.QueryRow("INSERT INTO "+THING_GROUP_TABLE+`(name, account_id, description, created_at, updated_at)
-        VALUES($1, $2, $3, $4, $4) RETURNING id;
-    `, group.GetName(), group.GetAccountId(), group.GetDescription(), timeNow).Scan(&groupID)
-	if err != nil {
+func (m *MgoDL) CreateGroup(group *models.ThingGroup) error {
+	sess := m.Session.Copy()
+	defer sess.Close()
+	if err := sess.DB(DBName).C(THING_GROUP_COLLECTION).Insert(group); err != nil {
 		return err
 	}
-	setTime(group, timeNow, timeNow)
-	group.ID = groupID
 	return nil
 }
 
 // UpdateGroup takes a group as parameter and uses its informations to update the DB
-func (p *PostgresDL) UpdateGroup(group *pb.ThingGroup) error {
-	updateTime := time.Now()
-	var createdTime time.Time
-	err := p.Db.QueryRow("UPDATE "+THING_GROUP_TABLE+` SET
-        name=$1,
-		account_id=$2
-        description=$3,
-        updated_at=$4
-        WHERE id=$5 RETURNING created_at;
-    `, group.GetName(), group.GetAccountId(), group.GetDescription(), updateTime, group.GetID()).Scan(&createdTime)
-	if err != nil {
+func (m *MgoDL) UpdateGroup(group *models.ThingGroup) error {
+	sess := m.Session.Copy()
+	defer sess.Clone()
+	if err := sess.DB(DBName).C(THING_GROUP_COLLECTION).UpdateId(group.ID, group); err != nil {
 		return err
 	}
-	setTime(group, createdTime, updateTime)
 	return nil
 }
 
 // DeleteGroup deletes a group identified by its ID
-func (p *PostgresDL) DeleteGroup(groupID int32) error {
-	if _, err := p.Db.Query("DELETE FROM "+THING_GROUP_TABLE+" WHERE id=$1;", groupID); err != nil {
+func (m *MgoDL) DeleteGroup(groupID string) error {
+	sess := m.Session.Copy()
+	defer sess.Clone()
+	if err := sess.DB(DBName).C(THING_GROUP_COLLECTION).RemoveId(bson.ObjectIdHex(groupID)); err != nil {
 		return err
 	}
 	return nil
-}
-
-func setTime(group *pb.ThingGroup, create time.Time, update time.Time) {
-	group.CreatedAt = &timestamp.Timestamp{Seconds: create.Unix()}
-	group.UpdatedAt = &timestamp.Timestamp{Seconds: update.Unix()}
 }
