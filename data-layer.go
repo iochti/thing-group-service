@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -57,6 +58,7 @@ func (m *MgoDL) Init() error {
 // GetGroupByID gets a group by its ID
 func (m *MgoDL) GetGroupByID(groupID string, group *models.ThingGroup) error {
 	sess := m.Session.Copy()
+	defer sess.Close()
 	if err := sess.DB(DBName).C(THING_GROUP_COLLECTION).FindId(bson.ObjectIdHex(groupID)).One(&group); err != nil {
 		return err
 	}
@@ -67,6 +69,10 @@ func (m *MgoDL) GetGroupByID(groupID string, group *models.ThingGroup) error {
 func (m *MgoDL) CreateGroup(group *models.ThingGroup) error {
 	sess := m.Session.Copy()
 	defer sess.Close()
+	creationTime := time.Now()
+	group.ID = bson.NewObjectId()
+	group.CreatedAt = creationTime
+	group.UpdatedAt = creationTime
 	if err := sess.DB(DBName).C(THING_GROUP_COLLECTION).Insert(group); err != nil {
 		return err
 	}
@@ -77,6 +83,7 @@ func (m *MgoDL) CreateGroup(group *models.ThingGroup) error {
 func (m *MgoDL) UpdateGroup(group *models.ThingGroup) error {
 	sess := m.Session.Copy()
 	defer sess.Clone()
+	group.UpdatedAt = time.Now()
 	if err := sess.DB(DBName).C(THING_GROUP_COLLECTION).UpdateId(group.ID, group); err != nil {
 		return err
 	}
