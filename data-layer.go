@@ -17,6 +17,7 @@ import (
 // DataLayerInterface is an interface abstracting methods to CRUD ThingGroup
 type DataLayerInterface interface {
 	GetGroupByID(groupID string, group *models.ThingGroup) error
+	ListGroupsByUser(userID string) ([]models.ThingGroup, error)
 	CreateGroup(group *models.ThingGroup) error
 	UpdateGroup(group *models.ThingGroup) error
 	DeleteGroup(groupID string) error
@@ -98,4 +99,14 @@ func (m *MgoDL) DeleteGroup(groupID string) error {
 		return err
 	}
 	return nil
+}
+
+func (m *MgoDL) ListGroupsByUser(userID string) ([]models.ThingGroup, error) {
+	sess := m.Session.Copy()
+	defer sess.Clone()
+	values := make([]models.ThingGroup, 0)
+	if err := sess.DB(DBName).C(THING_GROUP_COLLECTION).Find(bson.M{"accountId": bson.M{"$eq": bson.ObjectIdHex(userID)}}).All(&values); err != nil {
+		return values, err
+	}
+	return values, nil
 }

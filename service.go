@@ -32,6 +32,22 @@ func (t *ThingGroupSvc) GetGroup(ctx context.Context, in *pb.GroupIDRequest) (*p
 	return &pb.ThingGroup{Item: bytes}, nil
 }
 
+// ListUserGroups lists all groups for a given user
+func (t *ThingGroupSvc) ListUserGroups(in *pb.UserIDRequest, stream pb.ThingGroupSvc_ListUserGroupsServer) error {
+	fetched, err := t.Db.ListGroupsByUser(in.GetUserId())
+	if err != nil {
+		return grpc.Errorf(codes.Internal, err.Error())
+	}
+	for _, v := range fetched {
+		bytes, err := json.Marshal(v)
+		if err != nil {
+			return grpc.Errorf(codes.Internal, err.Error())
+		}
+		stream.Send(&pb.ThingGroup{Item: bytes})
+	}
+	return nil
+}
+
 // CreateGroup creates a group in the database in returns it
 func (t *ThingGroupSvc) CreateGroup(ctx context.Context, in *pb.ThingGroup) (*pb.ThingGroup, error) {
 	group := new(models.ThingGroup)
