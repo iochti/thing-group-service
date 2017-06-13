@@ -5,6 +5,8 @@ MAINTAINER Luc CHMIELOWSKI <luc.chmielowski@gmail.com>
 ENV GO15VENDOREXPERIMENT=1
 
 EXPOSE 5003
+RUN apt-get update -y
+RUN apt-get install -y libsasl2-dev
 
 RUN mkdir -p /go/src/github.com/iochti/thing-group-service
 WORKDIR /go/src/github.com/iochti/thing-group-service
